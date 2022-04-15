@@ -17,8 +17,6 @@ if [ ! -d "${PWD}/kernel_ccache" ];
 ##----------------------------------------------------------##
 # Specify Kernel Directory
 KERNEL_DIR="$(pwd)"
-CLANG_VER="$("$KERNEL_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
-LLD_VER="$("$KERNEL_DIR"/bin/ld.lld --version | head -n 1)"
 
 ##----------------------------------------------------------##
 # Device Name and Model
@@ -123,7 +121,7 @@ function exports() {
         # Export KBUILD_COMPILER_STRING
         if [ -d ${KERNEL_DIR}/clang ];
            then
-               export KBUILD_COMPILER_STRING="$CLANG_VER with $LLD_VER"
+               export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
         elif [ -d ${KERNEL_DIR}/gcc64 ];
            then
                export KBUILD_COMPILER_STRING=$("$KERNEL_DIR/gcc64"/bin/aarch64-elf-gcc --version | head -n 1)
@@ -189,18 +187,11 @@ START=$(date +"%s")
 	post_msg "<b>$KBUILD_BUILD_VERSION CI Build Triggered</b>%0A<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>$MODEL [$DEVICE]</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0A<b>Branch : </b><code>$CI_BRANCH</code>%0A<b>Top Commit : </b><a href='$DRONE_COMMIT_LINK'>$COMMIT_HEAD</a>"
 	
 	# Compile
-	make O=out CC="ccache clang" ARCH=arm64 $DEFCONFIG
+	make O=out CC="clang" ARCH=arm64 $DEFCONFIG
 	if [ -d ${KERNEL_DIR}/clang ];
 	   then
 	       make -j$(nproc --all) O=out \
-	       CC="ccache clang" \
-	       LD=ld.lld \
-	       AR=llvm-ar \
-	       AS=llvm-as \
-	       NM=llvm-nm \
-	       OBJCOPY=llvm-objcopy \
-	       OBJDUMP=llvm-objdump \
-	       STRIP=llvm-strip \
+	       CC="clang" \
 	       CROSS_COMPILE=aarch64-linux-android- \
 	       CROSS_COMPILE_ARM32=arm-linux-androideabi- \
 	       CLANG_TRIPLE=aarch64-linux-gnu- \
