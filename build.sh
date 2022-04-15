@@ -30,7 +30,7 @@ VERSION=X1
 DEFCONFIG=vendor/ginkgo-perf_defconfig
 
 # Files
-IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
+IMAGE=$(pwd)//out/arch/arm64/boot/Image.gz-dtb
 DTBO=$(pwd)/out/arch/arm64/boot/dtbo.img
 
 # Verbose Build
@@ -46,8 +46,8 @@ DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 TANGGAL=$(date +"%F%S")
 
 # Specify Final Zip Name
-ZIPNAME=Fucek
-FINAL_ZIP=${ZIPNAME}-${VERSION}-Kernel-4.14.275-R-${DEVICE}${TANGGAL}.zip
+ZIPNAME=Fucek-Kernel-4.14.275-R-ginkgo
+FINAL_ZIP=${ZIPNAME}-${VERSION}-${DEVICE}-Kernel-${TANGGAL}.zip
 
 ##----------------------------------------------------------##
 # Specify compiler.
@@ -188,11 +188,19 @@ START=$(date +"%s")
 	post_msg "<b>$KBUILD_BUILD_VERSION CI Build Triggered</b>%0A<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>$MODEL [$DEVICE]</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0A<b>Branch : </b><code>$CI_BRANCH</code>%0A<b>Top Commit : </b><a href='$DRONE_COMMIT_LINK'>$COMMIT_HEAD</a>"
 	
 	# Compile
-	make O=out ARCH=arm64 $DEFCONFIG
+	make O=out CC="ccache clang" ARCH=arm64 $DEFCONFIG
 	if [ -d ${KERNEL_DIR}/clang ];
 	   then
 	       make -j$(nproc --all) O=out \
-	       CC="clang" \
+	       LD_LIBRARY_PATH="${KERNEL_DIR}/clang/lib:${LD_LIBRARY_PATH}" \
+	       CC="ccache clang" \
+	       LD=clang/ld.lld \
+	       AR=clang/llvm-ar \
+	       AS=clang/llvm-as \
+	       NM=llvm-nm \
+	       OBJCOPY=llvm-objcopy \
+	       OBJDUMP=llvm-objdump \
+	       STRIP=llvm-strip \
 	       CROSS_COMPILE=aarch64-linux-android- \
 	       CROSS_COMPILE_ARM32=arm-linux-androideabi- \
 	       CLANG_TRIPLE=aarch64-linux-gnu- \
@@ -235,7 +243,8 @@ START=$(date +"%s")
 ##----------------------------------------------------------------##
 function zipping() {
 	# Copy Files To AnyKernel3 Zip
-	cp $IMAGE $DTBO AnyKernel3
+	cp $IMAGE AnyKernel3
+	cp $DTBO AnyKernel3
 	
 	# Zipping and Push Kernel
 	cd AnyKernel3 || exit 1
