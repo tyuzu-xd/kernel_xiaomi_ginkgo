@@ -17,8 +17,8 @@ if [ ! -d "${PWD}/kernel_ccache" ];
 ##----------------------------------------------------------##
 # Specify Kernel Directory
 KERNEL_DIR="$(pwd)"
-CLANG_VER="$("$KERNEL_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
-LLD_VER="$("$KERNEL_DIR"/bin/ld.lld --version | head -n 1)"
+CLANG_VER="$($KERNEL_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
+LLD_VER="$($KERNEL_DIR"/bin/ld.lld --version | head -n 1)"
 
 ##----------------------------------------------------------##
 # Device Name and Model
