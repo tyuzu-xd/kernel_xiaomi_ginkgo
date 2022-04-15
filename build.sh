@@ -31,6 +31,7 @@ DEFCONFIG=vendor/ginkgo-perf_defconfig
 
 # Files
 IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
+DTBO=$(pwd)/$DEVICE/out/arch/arm64/boot/dtbo.img
 
 # Verbose Build
 VERBOSE=0
