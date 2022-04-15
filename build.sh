@@ -17,6 +17,8 @@ if [ ! -d "${PWD}/kernel_ccache" ];
 ##----------------------------------------------------------##
 # Specify Kernel Directory
 KERNEL_DIR="$(pwd)"
+CLANG_VER="$("$KERNEL_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
+LLD_VER="$("$KERNEL_DIR"/bin/ld.lld --version | head -n 1)"
 
 ##----------------------------------------------------------##
 # Device Name and Model
@@ -30,7 +32,7 @@ VERSION=X1
 DEFCONFIG=vendor/ginkgo-perf_defconfig
 
 # Files
-IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
+IMAGE=$(pwd)/$DEVICE/out/arch/arm64/boot/Image.gz-dtb
 
 # Verbose Build
 VERBOSE=0
@@ -121,7 +123,7 @@ function exports() {
         # Export KBUILD_COMPILER_STRING
         if [ -d ${KERNEL_DIR}/clang ];
            then
-               export KBUILD_COMPILER_STRING=$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+               export KBUILD_COMPILER_STRING="$CLANG_VER with $LLD_VER"
         elif [ -d ${KERNEL_DIR}/gcc64 ];
            then
                export KBUILD_COMPILER_STRING=$("$KERNEL_DIR/gcc64"/bin/aarch64-elf-gcc --version | head -n 1)
@@ -192,6 +194,7 @@ START=$(date +"%s")
 	   then
 	       make -j$(nproc --all) O=out \
 	       CC="ccache clang" \
+	       LD=ld.lld \
 	       AR=llvm-ar \
 	       AS=llvm-as \
 	       NM=llvm-nm \
