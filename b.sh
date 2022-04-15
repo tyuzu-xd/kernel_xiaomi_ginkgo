@@ -1,79 +1,263 @@
-sudo ln -sf /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
-bold=$(tput bold)
-normal=$(tput sgr0)
+#!/usr/bin/env bash
 
-echo -e "${bold}Compile Sedang Berlangsung...${normal}"
+ #
+ # Script For Building Android Kernel
+ #
 
-SECONDS=0 # builtin bash timer
-ZIPNAME="elaina-2.1-Kernel-4.14.275-R-ginkgo-$(date '+%Y%m%d-%H%M').zip"
-SDC_DIR="/workspace/Gitpod-Workspaces/sdc-clang"
-GCC_DIR="/workspace/Gitpod-Workspaces/gcc"
-GCC64_DIR="/workspace/Gitpod-Workspaces/gcc64"
-AK3_DIR="./flasher"
-DEFCONFIG="vendor/ginkgo-perf_defconfig"
+if [ ! -d "${PWD}/kernel_ccache" ]; 
+    then
+    mkdir -p "${PWD}/kernel_ccache"
+    fi
+    export CCACHE_DIR="${PWD}/kernel_ccache"
+    export CCACHE_EXEC=$(which ccache)
+    export USE_CCACHE=1
+    ccache -M 2G
+    ccache -z
 
-export PATH="${SDC_DIR}/compiler/bin:${GCC64_DIR}/bin:${GCC_DIR}/bin:/usr/bin:${PATH}"
+##----------------------------------------------------------##
+# Specify Kernel Directory
+KERNEL_DIR="$(pwd)"
 
-if ! [ -d "$SDC_DIR" ]; then
-echo "Clang Tidak Ditemukan! Clone ke $SDC_DIR..."
-if ! git clone -b master --depth=1 https://github.com/ThankYouMario/proprietary_vendor_qcom_sdclang -b 14 $SDC_DIR; then
-echo "Clone Gagal! Batalkan..."
-exit 1
+##----------------------------------------------------------##
+# Device Name and Model
+MODEL=Xiaomi
+DEVICE=Ginkgo
+
+# Kernel Version Code
+VERSION=X1
+
+# Kernel Defconfig
+DEFCONFIG=vendor/ginkgo-perf_defconfig
+
+# Files
+IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
+
+# Verbose Build
+VERBOSE=0
+
+# Kernel Version
+KERVER=$(make kernelversion)
+
+COMMIT_HEAD=$(git log --oneline -1)
+
+# Date and Time
+DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
+TANGGAL=$(date +"%F%S")
+
+# Specify Final Zip Name
+ZIPNAME=Fucek-Kernel-4.14.275-R-ginkgo
+FINAL_ZIP=${ZIPNAME}-${VERSION}-${DEVICE}-Kernel-${TANGGAL}.zip
+
+##----------------------------------------------------------##
+# Specify compiler.
+
+if [ "$1" = "--eva" ];
+then
+COMPILER=eva
+elif [ "$1" = "--proton" ];
+then
+COMPILER=proton
+elif [ "$1" = "--aosp" ];
+then
+COMPILER=aosp
+elif [ "$1" = "--azure" ];
+then
+COMPILER=azure
+elif [ "$1" = "--snapdragon" ];
+then
+COMPILER=snapdragon
 fi
-fi
 
-if ! [ -d "$GCC64_DIR" ]; then
-echo "GCC 64 Tidak Ditemukan! Clone ke $GCC64_DIR..."
-if ! git clone https://github.com/fajar3109/aarch64-linux-android-4.9 -b main --depth=1 $GCC64_DIR; then
-echo "Clone Gagal! Batalkan..."
-exit 1
-fi
-fi
+##----------------------------------------------------------##
+# Clone ToolChain
+function cloneTC() {
+	
+	if [ $COMPILER = "snapdragon" ];
+	then
+	post_msg " Cloning Snapdragon Clang ToolChain "
+	git clone --depth=1 https://github.com/ThankYouMario/proprietary_vendor_qcom_sdclang -b 14 clang
+	PATH="${KERNEL_DIR}/clang/bin:$PATH"
+	
+	elif [ $COMPILER = "proton" ];
+	then
+	post_msg " Cloning Proton Clang ToolChain "
+	git clone --depth=1  https://github.com/kdrag0n/proton-clang.git clang
+	PATH="${KERNEL_DIR}/clang/bin:$PATH"
+	
+	elif [ $COMPILER = "azure" ];
+	then
+	post_msg " Cloning Azure Clang ToolChain "
+	git clone --depth=1  https://gitlab.com/Panchajanya1999/azure-clang.git clang
+	PATH="${KERNEL_DIR}/clang/bin:$PATH"
+	
+	elif [ $COMPILER = "eva" ];
+	then
+	post_msg " Cloning Eva GCC ToolChain "
+	git clone --depth=1 https://github.com/mvaisakh/gcc-arm64.git -b gcc-new gcc64
+	git clone --depth=1 https://github.com/mvaisakh/gcc-arm.git -b gcc-new gcc32
+	PATH=$KERNEL_DIR/gcc64/bin/:$KERNEL_DIR/gcc32/bin/:/usr/bin:$PATH
+	
+	elif [ $COMPILER = "aosp" ];
+	then
+	post_msg " Cloning Aosp Clang 14.0.1 ToolChain "
+        mkdir aosp-clang
+        cd aosp-clang || exit
+	wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r437112b.tar.gz
+        tar -xf clang*
+        cd .. || exit
+	git clone https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9.git --depth=1 gcc
+	git clone https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9.git  --depth=1 gcc32
+	PATH="${KERNEL_DIR}/aosp-clang/bin:${KERNEL_DIR}/gcc/bin:${KERNEL_DIR}/gcc32/bin:${PATH}"
+	fi
+        # Clone AnyKernel
+        git clone --depth=1 https://github.com/kutemeikito/AnyKernel3
 
-if ! [ -d "$GCC_DIR" ]; then
-echo "GCC Tidak Ditemukan! Clone ke $GCC_DIR..."
-if ! git clone https://github.com/fajar3109/arm-linux-androideabi-4.9 -b main --depth=1 $GCC_DIR; then
-echo "Clone Gagal! Batalkan..."
-exit 1
-fi
-fi
+	}
+	
+##------------------------------------------------------##
+# Export Variables
+function exports() {
+	
+        # Export KBUILD_COMPILER_STRING
+        if [ -d ${KERNEL_DIR}/clang ];
+           then
+               export KBUILD_COMPILER_STRING=$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+        elif [ -d ${KERNEL_DIR}/gcc64 ];
+           then
+               export KBUILD_COMPILER_STRING=$("$KERNEL_DIR/gcc64"/bin/aarch64-elf-gcc --version | head -n 1)
+        elif [ -d ${KERNEL_DIR}/aosp-clang ];
+            then
+               export KBUILD_COMPILER_STRING=$(${KERNEL_DIR}/aosp-clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+        fi
+        
+        # Export ARCH and SUBARCH
+        export ARCH=arm64
+        export SUBARCH=arm64
+        
+        # Export Local Version
+        export LOCALVERSION="-${VERSION}"
+        
+        # KBUILD HOST and USER
+        export KBUILD_BUILD_HOST=Ubuntu
+        export KBUILD_BUILD_USER="tyuzu-xd"
+        
+        # CI
+        if [ "$CI" ]
+           then
+               
+           if [ "$CIRCLECI" ]
+              then
+                  export KBUILD_BUILD_VERSION=${CIRCLE_BUILD_NUM}
+                  export CI_BRANCH=${CIRCLE_BRANCH}
+           elif [ "$DRONE" ]
+	      then
+		  export KBUILD_BUILD_VERSION=${DRONE_BUILD_NUMBER}
+		  export CI_BRANCH=${DRONE_BRANCH}
+           fi
+		   
+        fi
+	export PROCS=$(nproc --all)
+	export DISTRO=$(source /etc/os-release && echo "${NAME}")
+	}
+        
+##----------------------------------------------------------------##
+# Telegram Bot Integration
 
-export KBUILD_BUILD_USER=fajar
-export KBUILD_BUILD_HOST=gitpod
+function post_msg() {
+	curl -s -X POST "https://api.telegram.org/bot$token/sendMessage" \
+	-d chat_id="$chat_id" \
+	-d "disable_web_page_preview=true" \
+	-d "parse_mode=html" \
+	-d text="$1"
+	}
 
-if [[ $1 = "-r" || $1 = "--regen" ]]; then
-make O=out ARCH=arm64 $DEFCONFIG savedefconfig
-cp out/defconfig arch/arm64/configs/$DEFCONFIG
-exit
-fi
+function push() {
+	curl -F document=@$1 "https://api.telegram.org/bot$token/sendDocument" \
+	-F chat_id="$chat_id" \
+	-F "disable_web_page_preview=true" \
+	-F "parse_mode=html" \
+	-F caption="$2"
+	}
+	
+##----------------------------------------------------------##
+# Compilation
+function compile() {
+START=$(date +"%s")
+	# Push Notification
+	post_msg "<b>$KBUILD_BUILD_VERSION CI Build Triggered</b>%0A<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>$MODEL [$DEVICE]</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0A<b>Branch : </b><code>$CI_BRANCH</code>%0A<b>Top Commit : </b><a href='$DRONE_COMMIT_LINK'>$COMMIT_HEAD</a>"
+	
+	# Compile
+	make O=out ARCH=arm64 $DEFCONFIG
+	if [ -d ${KERNEL_DIR}/clang ];
+	   then
+	       make -j$(nproc --all) O=out ARCH=arm64 \
+	       CC=clang \
+	       LD=ld.lld \
+	       AR=llvm-ar \
+	       AS=llvm-as NM=llvm-nm \
+	       OBJCOPY=llvm-objcopy \
+	       OBJDUMP=llvm-objdump \
+	       STRIP=llvm-strip \
+	       CROSS_COMPILE=aarch64-linux-android- \
+	       CROSS_COMPILE_ARM32=arm-linux-androideabi- \
+	       CLANG_TRIPLE=aarch64-linux-gnu- \
+	       V=$VERBOSE 2>&1 | tee error.log
+	elif [ -d ${KERNEL_DIR}/gcc64 ];
+	   then
+	       make -j$(nproc --all) O=out \
+	       ARCH=arm64 \
+	       CROSS_COMPILE_COMPAT=arm-eabi- \
+	       CROSS_COMPILE=aarch64-elf- \
+	       AR=llvm-ar \
+	       NM=llvm-nm \
+	       OBJCOPY=llvm-objcopy \
+	       OBJDUMP=llvm-objdump \
+	       STRIP=llvm-strip \
+	       OBJSIZE=llvm-size \
+	       V=$VERBOSE 2>&1 | tee error.log
+	elif [ -d ${KERNEL_DIR}/aosp-clang ];
+	   then
+           make -j$(nproc --all) O=out \
+	       ARCH=arm64 \
+	       LLVM=1 \
+	       LLVM_IAS=1 \
+	       CLANG_TRIPLE=aarch64-linux-gnu- \
+	       CROSS_COMPILE=aarch64-linux-android- \
+	       CROSS_COMPILE_COMPAT=arm-linux-androideabi- \
+	       V=$VERBOSE 2>&1 | tee error.log
+	fi
+	
+	# Verify Files
+	if ! [ -a "$IMAGE" ];
+	   then
+	       push "error.log" "Build Throws Errors"
+	       exit 1
+	   else
+	       post_msg " Kernel Compilation Finished. Started Zipping "
+	fi
+	}
 
-if [[ $1 = "-c" || $1 = "--clean" ]]; then
-rm -rf out
-fi
+##----------------------------------------------------------------##
+function zipping() {
+	# Copy Files To AnyKernel3 Zip
+	cp $IMAGE AnyKernel3
+	cp out/arch/arm64/boot/dtbo.img AnyKernel3
+	
+	# Zipping and Push Kernel
+	cd AnyKernel3 || exit 1
+        zip -r9 ${FINAL_ZIP} *
+        MD5CHECK=$(md5sum "$FINAL_ZIP" | cut -d' ' -f1)
+        push "$FINAL_ZIP" "Build took : $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) second(s) | For <b>$MODEL ($DEVICE)</b> | <b>${KBUILD_COMPILER_STRING}</b> | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"
+        cd ..
+        }
+    
+##----------------------------------------------------------##
 
-mkdir -p out
-make O=out ARCH=arm64 $DEFCONFIG
+cloneTC
+exports
+compile
+END=$(date +"%s")
+DIFF=$(($END - $START))
+zipping
 
-echo -e "\nStarting compilation...\n"
-make -j$(nproc --all) O=out ARCH=arm64 LD_LIBRARY_PATH="${SDC_DIR}/lib:${LD_LIBRARY_PATH}" CC=clang LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- CLANG_TRIPLE=aarch64-linux-gnu- Image.gz-dtb dtbo.img
-
-if [ -f "out/arch/arm64/boot/Image.gz-dtb" ] && [ -f "out/arch/arm64/boot/dtbo.img" ]; then
-echo -e "\nKernel Sukses Di Compile! Zipping up...\n"
-cp out/arch/arm64/boot/Image.gz-dtb flasher
-cp out/arch/arm64/boot/dtbo.img flasher
-rm -f *zip
-cd flasher
-zip -r9 "../$ZIPNAME" * -x '*.git*' README.md *placeholder
-cd ..
-rm -rf out/arch/arm64/boot
-rm -rf flasher/Image.gz-dtb
-rm -rf flasher/dtbo.img
-echo -e "\n Berhasil! dalam waktu $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) !"
-echo "Zip: $ZIPNAME"
-if ! [[ $HOSTNAME = "gitpod" && $USER = "fajar" ]]; then
-curl -T $ZIPNAME temp.sh; echo
-fi
-else
-echo -e "\nCompile Gagal! Tolong Perbaiki Masalah Ini"
-exit 1
-fi
+##----------------*****-----------------------------##
