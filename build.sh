@@ -31,7 +31,7 @@ DEFCONFIG=vendor/ginkgo-perf_defconfig
 
 # Files
 IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
-DTBO=$(pwd)/$DEVICE/out/arch/arm64/boot/dtbo.img
+DTBO=$(pwd)/out/arch/arm64/boot/dtbo.img
 
 # Verbose Build
 VERBOSE=0
@@ -191,7 +191,7 @@ START=$(date +"%s")
 	make O=out ARCH=arm64 $DEFCONFIG
 	if [ -d ${KERNEL_DIR}/clang ];
 	   then
-	       make -j$(nproc --all) \
+	       make -j$(nproc --all) O=out \
 	       CC="clang" \
 	       CROSS_COMPILE=aarch64-linux-android- \
 	       CROSS_COMPILE_ARM32=arm-linux-androideabi- \
