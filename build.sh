@@ -17,8 +17,8 @@ if [ ! -d "${PWD}/kernel_ccache" ];
 ##----------------------------------------------------------##
 # Specify Kernel Directory
 KERNEL_DIR="$(pwd)"
-CLANG_VER="$($KERNEL_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
-LLD_VER="$($KERNEL_DIR"/bin/ld.lld --version | head -n 1)"
+CLANG_VER="$("$KERNEL_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
+LLD_VER="$("$KERNEL_DIR"/bin/ld.lld --version | head -n 1)"
 
 ##----------------------------------------------------------##
 # Device Name and Model
@@ -32,7 +32,7 @@ VERSION=X1
 DEFCONFIG=vendor/ginkgo-perf_defconfig
 
 # Files
-IMAGE=$(pwd)/$DEVICE/out/arch/arm64/boot/Image.gz-dtb
+IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
 
 # Verbose Build
 VERBOSE=0
@@ -47,8 +47,8 @@ DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 TANGGAL=$(date +"%F%S")
 
 # Specify Final Zip Name
-ZIPNAME=Fucek-Kernel-4.14.275-R-ginkgo
-FINAL_ZIP=${ZIPNAME}-${VERSION}-${DEVICE}-Kernel-${TANGGAL}.zip
+ZIPNAME=Fucek
+FINAL_ZIP=${ZIPNAME}-${VERSION}-Kernel-4.14.275-R-${DEVICE}${TANGGAL}.zip
 
 ##----------------------------------------------------------##
 # Specify compiler.
@@ -243,8 +243,7 @@ START=$(date +"%s")
 ##----------------------------------------------------------------##
 function zipping() {
 	# Copy Files To AnyKernel3 Zip
-	cp $IMAGE AnyKernel3
-	cp out/arch/arm64/boot/dtbo.img AnyKernel3
+	cp $IMAGE $DTBO AnyKernel3
 	
 	# Zipping and Push Kernel
 	cd AnyKernel3 || exit 1
