@@ -30,7 +30,7 @@ VERSION=X1
 DEFCONFIG=vendor/ginkgo-perf_defconfig
 
 # Files
-IMAGE=$(pwd)//out/arch/arm64/boot/Image.gz-dtb
+IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
 DTBO=$(pwd)/out/arch/arm64/boot/dtbo.img
 
 # Verbose Build
@@ -76,9 +76,9 @@ function cloneTC() {
 	if [ $COMPILER = "snapdragon" ];
 	then
 	post_msg " Cloning Snapdragon Clang ToolChain "
-	git clone --depth=1 https://github.com/ThankYouMario/proprietary_vendor_qcom_sdclang -b 14 clang
-	PATH="${KERNEL_DIR}/clang/bin:$PATH"
-	
+	git clone -b master --depth=1 https://github.com/ThankYouMario/proprietary_vendor_qcom_sdclang -b 14 clang
+        PATH="${KERNEL_DIR}/clang/bin:${KERNEL_DIR}/gcc/bin:${KERNEL_DIR}/gcc32/bin:${PATH}"
+    
 	elif [ $COMPILER = "proton" ];
 	then
 	post_msg " Cloning Proton Clang ToolChain "
@@ -189,44 +189,9 @@ START=$(date +"%s")
 	
 	# Compile
 	make O=out ARCH=arm64 $DEFCONFIG
-	if [ -d ${KERNEL_DIR}/clang ];
+    if [ -f $IMAGE ] && [ -f $DTBO ];
 	   then
-	       make -j$(nproc --all) \
-	       LD_LIBRARY_PATH="${KERNEL_DIR}/clang/lib:${LD_LIBRARY_PATH}" \
-	       CC="clang" \
-	       LD=clang/ld.lld \
-	       AR=clang/llvm-ar \
-	       AS=clang/llvm-as \
-	       NM=llvm-nm \
-	       OBJCOPY=llvm-objcopy \
-	       OBJDUMP=llvm-objdump \
-	       STRIP=llvm-strip \
-	       CROSS_COMPILE=aarch64-linux-android- \
-	       CROSS_COMPILE_ARM32=arm-linux-androideabi- \
-	       CLANG_TRIPLE=aarch64-linux-gnu- \
-	       V=$VERBOSE 2>&1 | tee error.log
-	elif [ -d ${KERNEL_DIR}/gcc64 ];
-	   then
-	       make -j$(nproc --all) O=out \
-	       ARCH=arm64 \
-	       CROSS_COMPILE_COMPAT=arm-eabi- \
-	       CROSS_COMPILE=aarch64-elf- \
-	       AR=llvm-ar \
-	       NM=llvm-nm \
-	       OBJCOPY=llvm-objcopy \
-	       OBJDUMP=llvm-objdump \
-	       STRIP=llvm-strip \
-	       OBJSIZE=llvm-size \
-	       V=$VERBOSE 2>&1 | tee error.log
-	elif [ -d ${KERNEL_DIR}/aosp-clang ];
-	   then
-           make -j$(nproc --all) O=out \
-	       ARCH=arm64 \
-	       LLVM=1 \
-	       LLVM_IAS=1 \
-	       CLANG_TRIPLE=aarch64-linux-gnu- \
-	       CROSS_COMPILE=aarch64-linux-android- \
-	       CROSS_COMPILE_COMPAT=arm-linux-androideabi- \
+	       make -j$(nproc --all) O=out ARCH=arm64 LD_LIBRARY_PATH="${SDC_DIR}/lib:${LD_LIBRARY_PATH}" CC=clang LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- CLANG_TRIPLE=aarch64-linux-gnu- Image.gz-dtb dtbo.img
 	       V=$VERBOSE 2>&1 | tee error.log
 	fi
 	
@@ -244,14 +209,17 @@ START=$(date +"%s")
 function zipping() {
 	# Copy Files To AnyKernel3 Zip
 	cp $IMAGE AnyKernel3
-	cp $DTBO AnyKernel3
+        cp $DTBO AnyKernel3
 	
 	# Zipping and Push Kernel
-	cd AnyKernel3 || exit 1
-        zip -r9 ${FINAL_ZIP} *
+	cd AnyKernel3
+	git checkout master &> /dev/null
+        zip -r9 ${FINAL_ZIP} * -x '*.git*' README.md *placeholder
         MD5CHECK=$(md5sum "$FINAL_ZIP" | cut -d' ' -f1)
         push "$FINAL_ZIP" "Build took : $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) second(s) | For <b>$MODEL ($DEVICE)</b> | <b>${KBUILD_COMPILER_STRING}</b> | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"
         cd ..
+        rm -rf AnyKernel3
+        rm -rf out/arch/arm64/boot
         }
     
 ##----------------------------------------------------------##
