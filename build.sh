@@ -76,7 +76,7 @@ function cloneTC() {
 	if [ $COMPILER = "snapdragon" ];
 	then
 	post_msg " Cloning Snapdragon Clang ToolChain "
-	git clone --depth=1 https://github.com/ThankYouMario/proprietary_vendor_qcom_sdclang -b 14 clang
+	git clone --depth=1 -b 14 https://github.com/ThankYouMario/proprietary_vendor_qcom_sdclang.git clang
     PATH="${KERNEL_DIR}/clang/bin:$PATH"
     
 	elif [ $COMPILER = "proton" ];
