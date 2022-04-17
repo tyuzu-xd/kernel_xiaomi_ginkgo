@@ -33,7 +33,7 @@ KERVER=$(make kernelversion)
 COMMIT_HEAD=$(git log --oneline -1)
 
 # Date and Time
-DATE=$(TZ=Asia/Kolkata date +"%Y%m%d-%T")
+DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 TANGGAL=$(date +"%F%S")
 
 # Specify Final Zip Name
@@ -73,13 +73,13 @@ function cloneTC() {
 	elif [ $COMPILER = "proton" ];
 	then
 	post_msg " Cloning Proton Clang ToolChain "
-	git clone --depth=1  https://github.com/kdrag0n/proton-clang.git clang
+	git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
 	PATH="${KERNEL_DIR}/clang/bin:$PATH"
 	
 	elif [ $COMPILER = "azure" ];
 	then
 	post_msg " Cloning Azure Clang ToolChain "
-	git clone --depth=1  https://gitlab.com/Panchajanya1999/azure-clang.git clang
+	git clone --depth=1 https://gitlab.com/Panchajanya1999/azure-clang.git clang
 	PATH="${KERNEL_DIR}/clang/bin:$PATH"
 	
 	elif [ $COMPILER = "eva" ];
@@ -131,7 +131,7 @@ function exports() {
         
         # KBUILD HOST and USER
         export KBUILD_BUILD_HOST=ArchLinux
-        export KBUILD_BUILD_USER="Prashant"
+        export KBUILD_BUILD_USER="TyuzuXD"
         
         # CI
         if [ "$CI" ]
