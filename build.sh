@@ -1,18 +1,9 @@
+
 #!/usr/bin/env bash
 
  #
  # Script For Building Android Kernel
  #
-
-if [ ! -d "${PWD}/kernel_ccache" ]; 
-    then
-    mkdir -p "${PWD}/kernel_ccache"
-    fi
-    export CCACHE_DIR="${PWD}/kernel_ccache"
-    export CCACHE_EXEC=$(which ccache)
-    export USE_CCACHE=1
-    ccache -M 2G
-    ccache -z
 
 ##----------------------------------------------------------##
 # Specify Kernel Directory
@@ -42,11 +33,11 @@ KERVER=$(make kernelversion)
 COMMIT_HEAD=$(git log --oneline -1)
 
 # Date and Time
-DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
+DATE=$(TZ=Asia/Kolkata date +"%Y%m%d-%T")
 TANGGAL=$(date +"%F%S")
 
 # Specify Final Zip Name
-ZIPNAME=Fucek
+ZIPNAME=Nexus
 FINAL_ZIP=${ZIPNAME}-${VERSION}-${DEVICE}-Kernel-${TANGGAL}.zip
 
 ##----------------------------------------------------------##
@@ -64,31 +55,31 @@ COMPILER=aosp
 elif [ "$1" = "--azure" ];
 then
 COMPILER=azure
-elif [ "$1" = "--snapdragon" ];
+elif [ "$1" = "--neutron" ];
 then
-COMPILER=snapdragon
+COMPILER=neutron
 fi
 
 ##----------------------------------------------------------##
 # Clone ToolChain
 function cloneTC() {
 	
-	if [ $COMPILER = "snapdragon" ];
+	if [ $COMPILER = "neutron" ];
 	then
-	post_msg " Cloning Snapdragon Clang ToolChain "
-	git clone --depth=1 -b 14 https://github.com/ThankYouMario/proprietary_vendor_qcom_sdclang.git clang
-        PATH="${KERNEL_DIR}/clang/bin:$PATH"
-    
+	post_msg " Cloning Neutron Clang ToolChain "
+	git clone --depth=1  https://github.com/Neutron-Clang/neutron-toolchain.git clang
+	PATH="${KERNEL_DIR}/clang/bin:$PATH"
+	
 	elif [ $COMPILER = "proton" ];
 	then
 	post_msg " Cloning Proton Clang ToolChain "
-	git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
+	git clone --depth=1  https://github.com/kdrag0n/proton-clang.git clang
 	PATH="${KERNEL_DIR}/clang/bin:$PATH"
 	
 	elif [ $COMPILER = "azure" ];
 	then
 	post_msg " Cloning Azure Clang ToolChain "
-	git clone --depth=1 https://gitlab.com/Panchajanya1999/azure-clang.git clang
+	git clone --depth=1  https://gitlab.com/Panchajanya1999/azure-clang.git clang
 	PATH="${KERNEL_DIR}/clang/bin:$PATH"
 	
 	elif [ $COMPILER = "eva" ];
@@ -111,7 +102,7 @@ function cloneTC() {
 	PATH="${KERNEL_DIR}/aosp-clang/bin:${KERNEL_DIR}/gcc/bin:${KERNEL_DIR}/gcc32/bin:${PATH}"
 	fi
         # Clone AnyKernel
-        git clone --depth=1 https://github.com/kutemeikito/AnyKernel3
+        git clone --depth=1 https://github.com/reaPeR1010/AnyKernel3
 
 	}
 	
@@ -122,7 +113,7 @@ function exports() {
         # Export KBUILD_COMPILER_STRING
         if [ -d ${KERNEL_DIR}/clang ];
            then
-               export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+               export KBUILD_COMPILER_STRING=$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
         elif [ -d ${KERNEL_DIR}/gcc64 ];
            then
                export KBUILD_COMPILER_STRING=$("$KERNEL_DIR/gcc64"/bin/aarch64-elf-gcc --version | head -n 1)
@@ -139,8 +130,8 @@ function exports() {
         export LOCALVERSION="-${VERSION}"
         
         # KBUILD HOST and USER
-        export KBUILD_BUILD_HOST=Ubuntu
-        export KBUILD_BUILD_USER="tyuzu-xd"
+        export KBUILD_BUILD_HOST=ArchLinux
+        export KBUILD_BUILD_USER="Prashant"
         
         # CI
         if [ "$CI" ]
@@ -179,36 +170,26 @@ function push() {
 	-F "parse_mode=html" \
 	-F caption="$2"
 	}
-	
 ##----------------------------------------------------------##
 # Compilation
 function compile() {
 START=$(date +"%s")
 	# Push Notification
-	post_msg "<b>$KBUILD_BUILD_VERSION CI Build Triggered</b>%0A<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>$MODEL [$DEVICE]</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0A<b>Branch : </b><code>$CI_BRANCH</code>%0A<b>Top Commit : </b><a href='$DRONE_COMMIT_LINK'>$COMMIT_HEAD</a>"
+	post_msg "<b>$KBUILD_BUILD_VERSION CI Build Triggered</b>%0A<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Kolkata date)</code>%0A<b>Device : </b><code>$MODEL [$DEVICE]</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0A<b>Branch : </b><code>$CI_BRANCH</code>%0A<b>Top Commit : </b><a href='$DRONE_COMMIT_LINK'>$COMMIT_HEAD</a>"
 	
 	# Compile
-	make O=out ARCH=arm64 $DEFCONFIG
-    if [ -d ${KERNEL_DIR}/clang ];
+	make O=out CC=clang ARCH=arm64 ${DEFCONFIG}
+	if [ -d ${KERNEL_DIR}/clang ];
 	   then
-	       make -j$(nproc --all) O=out \
+	       make -kj$(nproc --all) O=out \
 	       ARCH=arm64 \
-	       LD_LIBRARY_PATH="${KERNEL_DIR}/clang/lib:${LD_LIBRARY_PATH}" \
-	       CC=clang \
-	       LD=ld.lld \
-	       AR=llvm-ar \
-	       AS=llvm-as \
-	       NM=llvm-nm \
-	       OBJCOPY=llvm-objcopy \
-	       OBJDUMP=llvm-objdump \
-	       STRIP=llvm-strip \
-	       CROSS_COMPILE=aarch64-linux-android- \
-	       CROSS_COMPILE_ARM32=arm-linux-androideabi- \
-	       CLANG_TRIPLE=aarch64-linux-gnu- \
+		   CC=clang \
+	       CROSS_COMPILE=aarch64-linux-gnu- \
+	       CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
 	       V=$VERBOSE 2>&1 | tee error.log
 	elif [ -d ${KERNEL_DIR}/gcc64 ];
 	   then
-	       make -j$(nproc --all) O=out \
+	       make -kj$(nproc --all) O=out \
 	       ARCH=arm64 \
 	       CROSS_COMPILE_COMPAT=arm-eabi- \
 	       CROSS_COMPILE=aarch64-elf- \
@@ -221,7 +202,7 @@ START=$(date +"%s")
 	       V=$VERBOSE 2>&1 | tee error.log
         elif [ -d ${KERNEL_DIR}/aosp-clang ];
            then
-           make -j$(nproc --all) O=out \
+               make -kj$(nproc --all) O=out \
 	       ARCH=arm64 \
 	       LLVM=1 \
 	       LLVM_IAS=1 \
@@ -245,10 +226,10 @@ START=$(date +"%s")
 function zipping() {
 	# Copy Files To AnyKernel3 Zip
 	cp $IMAGE AnyKernel3
-        cp $DTBO AnyKernel3
-	
+	cp $DTBO AnyKernel3
+
 	# Zipping and Push Kernel
-	cd AnyKernel3
+	cd AnyKernel3 || exit 1
         zip -r9 ${FINAL_ZIP} *
         MD5CHECK=$(md5sum "$FINAL_ZIP" | cut -d' ' -f1)
         push "$FINAL_ZIP" "Build took : $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) second(s) | For <b>$MODEL ($DEVICE)</b> | <b>${KBUILD_COMPILER_STRING}</b> | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"
