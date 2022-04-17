@@ -77,7 +77,7 @@ function cloneTC() {
 	then
 	post_msg " Cloning Snapdragon Clang ToolChain "
 	git clone --depth=1 -b 14 https://github.com/ThankYouMario/proprietary_vendor_qcom_sdclang.git clang
-    PATH="${KERNEL_DIR}/clang/bin:$PATH"
+        PATH="${KERNEL_DIR}/clang/bin:$PATH"
     
 	elif [ $COMPILER = "proton" ];
 	then
@@ -245,7 +245,7 @@ START=$(date +"%s")
 function zipping() {
 	# Copy Files To AnyKernel3 Zip
 	cp $IMAGE AnyKernel3
-    cp $DTBO AnyKernel3
+        cp $DTBO AnyKernel3
 	
 	# Zipping and Push Kernel
 	cd AnyKernel3
