@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 
  #
@@ -15,7 +14,7 @@ MODEL=Xiaomi
 DEVICE=Ginkgo
 
 # Kernel Version Code
-VERSION=X1
+VERSION=R
 
 # Kernel Defconfig
 DEFCONFIG=vendor/ginkgo-perf_defconfig
@@ -37,7 +36,7 @@ DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 TANGGAL=$(date +"%F%S")
 
 # Specify Final Zip Name
-ZIPNAME=Nexus
+ZIPNAME=FanEdition
 FINAL_ZIP=${ZIPNAME}-${VERSION}-${DEVICE}-Kernel-${TANGGAL}.zip
 
 ##----------------------------------------------------------##
@@ -66,32 +65,32 @@ function cloneTC() {
 	
 	if [ $COMPILER = "neutron" ];
 	then
-	post_msg " Cloning Neutron Clang ToolChain "
+	post_msg " xKernelCompiler Started Neutron Clang ToolChain "
 	git clone --depth=1  https://github.com/Neutron-Clang/neutron-toolchain.git clang
 	PATH="${KERNEL_DIR}/clang/bin:$PATH"
 	
 	elif [ $COMPILER = "proton" ];
 	then
-	post_msg " Cloning Proton Clang ToolChain "
+	post_msg " xKernelCompiler Started Proton Clang ToolChain "
 	git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
 	PATH="${KERNEL_DIR}/clang/bin:$PATH"
 	
 	elif [ $COMPILER = "azure" ];
 	then
-	post_msg " Cloning Azure Clang ToolChain "
+	post_msg " xKernelCompiler Started Azure Clang ToolChain "
 	git clone --depth=1 https://gitlab.com/Panchajanya1999/azure-clang.git clang
 	PATH="${KERNEL_DIR}/clang/bin:$PATH"
 	
 	elif [ $COMPILER = "eva" ];
 	then
-	post_msg " Cloning Eva GCC ToolChain "
+	post_msg " xKernelCompiler Started Eva GCC ToolChain "
 	git clone --depth=1 https://github.com/mvaisakh/gcc-arm64.git -b gcc-new gcc64
 	git clone --depth=1 https://github.com/mvaisakh/gcc-arm.git -b gcc-new gcc32
 	PATH=$KERNEL_DIR/gcc64/bin/:$KERNEL_DIR/gcc32/bin/:/usr/bin:$PATH
 	
 	elif [ $COMPILER = "aosp" ];
 	then
-	post_msg " Cloning Aosp Clang 14.0.1 ToolChain "
+	post_msg " xKernelCompiler Started Aosp Clang 14.0.1 ToolChain "
         mkdir aosp-clang
         cd aosp-clang || exit
 	wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r437112b.tar.gz
@@ -102,7 +101,7 @@ function cloneTC() {
 	PATH="${KERNEL_DIR}/aosp-clang/bin:${KERNEL_DIR}/gcc/bin:${KERNEL_DIR}/gcc32/bin:${PATH}"
 	fi
         # Clone AnyKernel
-        git clone --depth=1 https://github.com/reaPeR1010/AnyKernel3
+        git clone --depth=1 https://github.com/tyuzu-xd/AnyKernel3.git -b ginkgo
 
 	}
 	
@@ -130,8 +129,8 @@ function exports() {
         export LOCALVERSION="-${VERSION}"
         
         # KBUILD HOST and USER
-        export KBUILD_BUILD_HOST=ArchLinux
-        export KBUILD_BUILD_USER="TyuzuXD"
+        export KBUILD_BUILD_HOST=tyzprjkt-ci
+        export KBUILD_BUILD_USER="tyuzu-xd"
         
         # CI
         if [ "$CI" ]
@@ -181,15 +180,21 @@ START=$(date +"%s")
 	make O=out CC=clang ARCH=arm64 ${DEFCONFIG}
 	if [ -d ${KERNEL_DIR}/clang ];
 	   then
-	       make -kj$(nproc --all) O=out \
-	       ARCH=arm64 \
-		   CC=clang \
+	       make -j$(nproc --all) O=out ARCH=arm64 SUBARCH=arm64 ${DEFCONFIG}
+	       make -j$(nproc --all) ARCH=arm64 SUBARCH=arm64 O=out \
+	       CC=clang \
+	       NM=llvm-nm \
+	       AR=llvm-ar \
+	       AS=llvm-as \
+	       OBJCOPY=llvm-objcopy \
+	       OBJDUMP=llvm-objdump \
+	       STRIP=llvm-strip \
 	       CROSS_COMPILE=aarch64-linux-gnu- \
-	       CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+	       CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
 	       V=$VERBOSE 2>&1 | tee error.log
 	elif [ -d ${KERNEL_DIR}/gcc64 ];
 	   then
-	       make -kj$(nproc --all) O=out \
+	       make -j$(nproc --all) O=out \
 	       ARCH=arm64 \
 	       CROSS_COMPILE_COMPAT=arm-eabi- \
 	       CROSS_COMPILE=aarch64-elf- \
@@ -202,7 +207,7 @@ START=$(date +"%s")
 	       V=$VERBOSE 2>&1 | tee error.log
         elif [ -d ${KERNEL_DIR}/aosp-clang ];
            then
-               make -kj$(nproc --all) O=out \
+               make -j$(nproc --all) O=out \
 	       ARCH=arm64 \
 	       LLVM=1 \
 	       LLVM_IAS=1 \
