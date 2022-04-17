@@ -20,8 +20,8 @@ VERSION=R
 DEFCONFIG=vendor/ginkgo-perf_defconfig
 
 # Files
-IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
-DTBO=$(pwd)/out/arch/arm64/boot/dtbo.img
+IMAGE=$(pwd)/ginkgo/out/arch/arm64/boot/Image.gz-dtb
+DTBO=$(pwd)/ginkgo/out/arch/arm64/boot/dtbo.img
 
 # Verbose Build
 VERBOSE=0
@@ -66,7 +66,7 @@ function cloneTC() {
 	if [ $COMPILER = "neutron" ];
 	then
 	post_msg " xKernelCompiler Started Neutron Clang ToolChain "
-	git clone --depth=1  https://github.com/Neutron-Clang/neutron-toolchain.git clang
+	git clone --depth=1 -b main https://github.com/xyz-prjkt/xRageTC-clang.git clang
 	PATH="${KERNEL_DIR}/clang/bin:$PATH"
 	
 	elif [ $COMPILER = "proton" ];
@@ -169,6 +169,7 @@ function push() {
 	-F "parse_mode=html" \
 	-F caption="$2"
 	}
+	
 ##----------------------------------------------------------##
 # Compilation
 function compile() {
@@ -186,6 +187,7 @@ START=$(date +"%s")
 	       NM=llvm-nm \
 	       AR=llvm-ar \
 	       AS=llvm-as \
+	       LD=ld.lld \
 	       OBJCOPY=llvm-objcopy \
 	       OBJDUMP=llvm-objdump \
 	       STRIP=llvm-strip \
@@ -205,9 +207,9 @@ START=$(date +"%s")
 	       STRIP=llvm-strip \
 	       OBJSIZE=llvm-size \
 	       V=$VERBOSE 2>&1 | tee error.log
-        elif [ -d ${KERNEL_DIR}/aosp-clang ];
-           then
-               make -j$(nproc --all) O=out \
+	elif [ -d ${KERNEL_DIR}/aosp-clang ];
+	   then
+           make -j$(nproc --all) O=out \
 	       ARCH=arm64 \
 	       LLVM=1 \
 	       LLVM_IAS=1 \
