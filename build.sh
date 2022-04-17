@@ -46,7 +46,7 @@ DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
 TANGGAL=$(date +"%F%S")
 
 # Specify Final Zip Name
-ZIPNAME=Fucek-Kernel-4.14.275-R-ginkgo
+ZIPNAME=Fucek
 FINAL_ZIP=${ZIPNAME}-${VERSION}-${DEVICE}-Kernel-${TANGGAL}.zip
 
 ##----------------------------------------------------------##
@@ -76,8 +76,8 @@ function cloneTC() {
 	if [ $COMPILER = "snapdragon" ];
 	then
 	post_msg " Cloning Snapdragon Clang ToolChain "
-	git clone -b master --depth=1 https://github.com/ThankYouMario/proprietary_vendor_qcom_sdclang -b 14 clang
-        PATH="${KERNEL_DIR}/clang/bin:${KERNEL_DIR}/gcc/bin:${KERNEL_DIR}/gcc32/bin:${PATH}"
+	git clone --depth=1 https://github.com/ThankYouMario/proprietary_vendor_qcom_sdclang -b 14 clang
+    PATH="${KERNEL_DIR}/clang/bin:$PATH"
     
 	elif [ $COMPILER = "proton" ];
 	then
@@ -209,11 +209,11 @@ START=$(date +"%s")
 function zipping() {
 	# Copy Files To AnyKernel3 Zip
 	cp $IMAGE AnyKernel3
-        cp $DTBO AnyKernel3
+    cp $DTBO AnyKernel3
 	
 	# Zipping and Push Kernel
 	cd AnyKernel3
-	git checkout master &> /dev/null
+	    git checkout master &> /dev/null
         zip -r9 ${FINAL_ZIP} * -x '*.git*' README.md *placeholder
         MD5CHECK=$(md5sum "$FINAL_ZIP" | cut -d' ' -f1)
         push "$FINAL_ZIP" "Build took : $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) second(s) | For <b>$MODEL ($DEVICE)</b> | <b>${KBUILD_COMPILER_STRING}</b> | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"
