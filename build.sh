@@ -191,7 +191,18 @@ START=$(date +"%s")
 	make O=out ARCH=arm64 $DEFCONFIG
     if [ -f $IMAGE ] && [ -f $DTBO ];
 	   then
-	       make -j$(nproc --all) O=out ARCH=arm64 LD_LIBRARY_PATH="${SDC_DIR}/lib:${LD_LIBRARY_PATH}" CC=clang LD=ld.lld AR=llvm-ar AS=llvm-as NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-android- CROSS_COMPILE_ARM32=arm-linux-androideabi- CLANG_TRIPLE=aarch64-linux-gnu- Image.gz-dtb dtbo.img
+	       make -j$(nproc --all) O=out \
+	       ARCH=arm64 \
+	       LD_LIBRARY_PATH="${KERNEL_DIR}/clang/lib:${LD_LIBRARY_PATH}" \
+	       CC=clang\
+	       LD=ld.lld AR=llvm-ar \
+	       AS=llvm-as NM=llvm-nm \
+	       OBJCOPY=llvm-objcopy \
+	       OBJDUMP=llvm-objdump \
+	       STRIP=llvm-strip \
+	       CROSS_COMPILE=aarch64-linux-android- \
+	       CROSS_COMPILE_ARM32=arm-linux-androideabi- \
+	       CLANG_TRIPLE=aarch64-linux-gnu- \
 	       V=$VERBOSE 2>&1 | tee error.log
 	fi
 	
