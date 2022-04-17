@@ -189,20 +189,45 @@ START=$(date +"%s")
 	
 	# Compile
 	make O=out ARCH=arm64 $DEFCONFIG
-    if [ -f $IMAGE ] && [ -f $DTBO ];
+    if [ -d ${KERNEL_DIR}/clang ];
 	   then
 	       make -j$(nproc --all) O=out \
 	       ARCH=arm64 \
 	       LD_LIBRARY_PATH="${KERNEL_DIR}/clang/lib:${LD_LIBRARY_PATH}" \
-	       CC=clang\
-	       LD=ld.lld AR=llvm-ar \
-	       AS=llvm-as NM=llvm-nm \
+	       CC=clang \
+	       LD=ld.lld \
+	       AR=llvm-ar \
+	       AS=llvm-as \
+	       NM=llvm-nm \
 	       OBJCOPY=llvm-objcopy \
 	       OBJDUMP=llvm-objdump \
 	       STRIP=llvm-strip \
 	       CROSS_COMPILE=aarch64-linux-android- \
 	       CROSS_COMPILE_ARM32=arm-linux-androideabi- \
 	       CLANG_TRIPLE=aarch64-linux-gnu- \
+	       V=$VERBOSE 2>&1 | tee error.log
+	elif [ -d ${KERNEL_DIR}/gcc64 ];
+	   then
+	       make -j$(nproc --all) O=out \
+	       ARCH=arm64 \
+	       CROSS_COMPILE_COMPAT=arm-eabi- \
+	       CROSS_COMPILE=aarch64-elf- \
+	       AR=llvm-ar \
+	       NM=llvm-nm \
+	       OBJCOPY=llvm-objcopy \
+	       OBJDUMP=llvm-objdump \
+	       STRIP=llvm-strip \
+	       OBJSIZE=llvm-size \
+	       V=$VERBOSE 2>&1 | tee error.log
+        elif [ -d ${KERNEL_DIR}/aosp-clang ];
+           then
+           make -j$(nproc --all) O=out \
+	       ARCH=arm64 \
+	       LLVM=1 \
+	       LLVM_IAS=1 \
+	       CLANG_TRIPLE=aarch64-linux-gnu- \
+	       CROSS_COMPILE=aarch64-linux-android- \
+	       CROSS_COMPILE_COMPAT=arm-linux-androideabi- \
 	       V=$VERBOSE 2>&1 | tee error.log
 	fi
 	
@@ -224,13 +249,10 @@ function zipping() {
 	
 	# Zipping and Push Kernel
 	cd AnyKernel3
-	    git checkout master &> /dev/null
-        zip -r9 ${FINAL_ZIP} * -x '*.git*' README.md *placeholder
+        zip -r9 ${FINAL_ZIP} *
         MD5CHECK=$(md5sum "$FINAL_ZIP" | cut -d' ' -f1)
         push "$FINAL_ZIP" "Build took : $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) second(s) | For <b>$MODEL ($DEVICE)</b> | <b>${KBUILD_COMPILER_STRING}</b> | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"
         cd ..
-        rm -rf AnyKernel3
-        rm -rf out/arch/arm64/boot
         }
     
 ##----------------------------------------------------------##
