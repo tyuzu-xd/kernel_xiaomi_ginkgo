@@ -4,6 +4,7 @@ jobs:
    docker:
       - image: tyuzu/kernel:build
    steps:
+      - run:
           command: |
            git config --global user.name "tzuyu-xd"
            git config --global user.email "sahruldarmian212@gmail.com"
