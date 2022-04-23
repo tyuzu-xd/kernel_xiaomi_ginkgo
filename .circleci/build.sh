@@ -129,7 +129,9 @@ compile() {
         AR=${GCC_ROOTDIR}/bin/aarch64-elf-ar \
         OBJDUMP=${GCC_ROOTDIR}/bin/aarch64-elf-objdump \
 	fi
-	BUILD_END=$(date +"%s")
+    }
+    
+    BUILD_END=$(date +"%s")
 	DIFF=$((BUILD_END - BUILD_START))
 	if [ -f "$IMG_DIR"/Image.gz-dtb ] 
 	then
@@ -140,7 +142,6 @@ compile() {
 		tg_post_msg "<b>Build failed to compile after $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds</b>"
 		exit 1
 	fi
-}
 
 # Set function for zipping into a flashable zip
 gen_zip() {
