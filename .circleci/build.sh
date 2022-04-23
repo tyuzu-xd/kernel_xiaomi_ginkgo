@@ -12,7 +12,7 @@ IMG_DIR=$TC_DIR/out/arch/arm64/boot/Image.gz-dtb
 DTBO_DIR=$TC_DIR//out/arch/arm64/boot/dtbo.img
 
 # Get defconfig file
-DEFCONFIG=vendor/ginkgo-perf_defconfig
+export DEFCONFIG=vendor/ginkgo-perf_defconfig
 
 # Set environment for etc.
 export ARCH=arm64
