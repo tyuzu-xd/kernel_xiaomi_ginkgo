@@ -1,88 +1,163 @@
 #!/usr/bin/env bash
-echo "Cloning dependencies"
-wget -O 64.zip https://github.com/mvaisakh/gcc-arm64/archive/85b79055a926ffa45ed7ce0005731d7bda4db137.zip;unzip 64.zip;mv gcc-arm64-85b79055a926ffa45ed7ce0005731d7bda4db137 gcc64
-wget -O 32.zip https://github.com/mvaisakh/gcc-arm/archive/b9cada9f629b7b3f72b201c77d93042695de33fc.zip;unzip 32.zip;mv gcc-arm-b9cada9f629b7b3f72b201c77d93042695de33fc gcc32
-git clone --depth=1 https://github.com/tzuyu-xd/AnyKernel3 AnyKernel
-echo "Done"
-# Main Declaration
-function env() {
-export DEFCONFIG=vendor/ginkgo-perf_defconfig
-IMAGE=$(pwd)/out/arch/arm64/boot/Image.gz-dtb
-TANGGAL=$(date +"%F-%S")
-START=$(date +"%s")
-KERNEL_DIR=$(pwd)
-GCC64_DIR="${pwd}/gcc64"
-GCC32_DIR="${pwd}/gcc32"
-GCC_VER="$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
-GCC_VER32="$("$GCC32_DIR"/bin/arm-eabi-gcc --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
-LLD_VER="$("$GCC64_DIR"/bin/ld.lld --version | head -n 1)"
-export KBUILD_COMPILER_STRING="$GCC_VER"
-export KBUILD_COMPILER_STRING32="$GCC_VER32 with $LLD_VER"
+
+#
+#
+# Copyright (c) 2021 tzuyu 
+# 
+#
+
+# Set environment for directory
+KERNEL_DIR=$PWD
+IMG_DIR="$KERNEL_DIR"/out/arch/arm64/boot/Image.gz-dtb
+DTBO_DIR=$CIRRUS_WORKING_DIR/$DEVICE_CODENAME/out/arch/arm64/boot/dtbo.img
+
+# Get defconfig file
+DEFCONFIG=vendor/ginkgo-perf_defconfig
+
+# Set environment for etc.
 export ARCH=arm64
 export SUBARCH=arm64
-export KBUILD_BUILD_HOST=circleci
-export KBUILD_BUILD_USER="tzuyu-xd"
+export KBUILD_BUILD_VERSION="1"
+export KBUILD_BUILD_USER="Tzuyu-XD"
+export KBUILD_BUILD_HOST="Ubuntu"
+
+# Set environment for telegram
+export BOT_MSG_URL="https://api.telegram.org/bot$TG_TOKEN/sendMessage"
+export BOT_BUILD_URL="https://api.telegram.org/bot$TG_TOKEN/sendDocument"
+
+#
+# Set if do you use GCC or clang compiler
+# Default is clang compiler
+#
+COMPILER=clang
+
+# Get distro name
+DISTRO=$(source /etc/os-release && echo ${NAME})
+
+# Get all cores of CPU
+PROCS=$(nproc --all)
+export PROCS
+
+# Set Date and time
+DATE=$(TZ=Asia/Jakarta date +"%Y%m%d-%T")
+
+# Get branch name
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+export BRANCH
+
+# Check kernel version
+KERVER=$(make kernelversion)
+
+# Get last commit
+COMMIT_HEAD=$(git log --oneline -1)
+
+# Set function for telegram
+tg_post_msg() {
+	curl -s -X POST "$BOT_MSG_URL" -d chat_id="$TG_CHAT_ID" \
+	-d "disable_web_page_preview=true" \
+	-d "parse_mode=html" \
+	-d text="$1"
 }
-# sticker plox
-function sticker() {
-    curl -s -X POST "https://api.telegram.org/bot$TG_TOKEN/sendSticker" \
-        -d sticker="CAACAgEAAxkBAAEnKnJfZOFzBnwC3cPwiirjZdgTMBMLRAACugEAAkVfBy-aN927wS5blhsE" \
-        -d chat_id=$TG_CHAT_ID
+
+tg_post_build() {
+	# Post MD5 Checksum alongwith for easeness
+	MD5CHECK=$(md5sum "$1" | cut -d' ' -f1)
+
+	# Show the Checksum alongwith caption
+	curl --progress-bar -F document=@"$1" "$BOT_BUILD_URL" \
+	-F chat_id="$TG_CHAT_ID"  \
+	-F "disable_web_page_preview=true" \
+	-F "parse_mode=html" \
+	-F caption="$2 | <b>MD5 Checksum : </b><code>$MD5CHECK</code>"
 }
-# Send info plox channel
-function sendinfo() {
-    curl -s -X POST "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
-        -d chat_id="$TG_CHAT_ID" \
-        -d "disable_web_page_preview=true" \
-        -d "parse_mode=html" \
-        -d text="<b>• Ginkgo-Miui Kernel •</b>%0ABuild started on <code>Circle CI</code>%0AFor device <b>Xiaomi Redmi Note8/8T</b> (Ginkgo/Willow)%0Abranch <code>$(git rev-parse --abbrev-ref HEAD)</code>(master)%0AUnder commit <code>$(git log --pretty=format:'"%h : %s"' -1)</code>%0AUsing compiler: <code>${KBUILD_COMPILER_STRING}</code>%0AStarted on <code>$(date)</code>%0A<b>Build Status:</b>#Stable"
+
+# Set function for cloning repository
+clone() {
+	if [[ $COMPILER == "clang" ]]; then
+		# Clone Proton clang
+		git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
+		# Set environment for clang
+		TC_DIR=$KERNEL_DIR/clang
+		# Get path and compiler string
+		KBUILD_COMPILER_STRING=$("$TC_DIR"/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+		PATH=$TC_DIR/bin/:$PATH
+	elif [[ $COMPILER == "gcc" ]]; then
+		# Clone GCC ARM64 and ARM32
+		git clone https://github.com/fiqri19102002/aarch64-gcc.git -b elf-gcc-10-tarballs --depth=1 gcc64
+		git clone https://github.com/fiqri19102002/arm-gcc.git -b elf-gcc-10-tarballs --depth=1 gcc32
+		# Set environment for GCC ARM64 and ARM32
+		GCC64_DIR=$KERNEL_DIR/gcc64
+		GCC32_DIR=$KERNEL_DIR/gcc32
+		# Get path and compiler string
+		KBUILD_COMPILER_STRING=$("$GCC64_DIR"/bin/aarch64-elf-gcc --version | head -n 1)
+		PATH=$GCC64_DIR/bin/:$GCC32_DIR/bin/:/usr/bin:$PATH
+	fi
+	
+	# Clone AnyKernel3
+	git clone --depth=1 https://github.com/tzuyu-xd/AnyKernel3.git
+    }
+
+# Set function for naming zip file
+set_naming() {
+	KERNEL_NAME="STRIX-ginklow-unified-personal-$DATE"
+	export ZIP_NAME="$KERNEL_NAME.zip"
 }
-# Push kernel to channel
-function push() {
-    cd AnyKernel
-    ZIP=$(echo *.zip)
-    curl -F document=@$ZIP "https://api.telegram.org/bot$TG_TOKEN/sendDocument" \
-        -F chat_id="$TG_CHAT_ID" \
-        -F "disable_web_page_preview=true" \
-        -F "parse_mode=html" \
-        -F caption="Build took $(($DIFF / 60)) minute(s) and $(($DIFF % 60)) second(s). | For <b>Xiaomi Redmi Note 8/8T (Ginkgo/Willow)</b>"
+
+# Set function for starting compile
+compile() {
+	echo -e "Kernel compilation starting"
+	tg_post_msg "<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>Redmi Note 8/8T (ginkgo/willow)</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0a<b>Branch : </b><code>$BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<b>Status : </b>#Personal"
+	make O=out "$DEFCONFIG"
+	BUILD_START=$(date +"%s")
+	if [[ $COMPILER == "clang" ]]; then
+        make -j$(nproc --all) O=out ARCH=arm64 SUBARCH=arm64 ${DEFCONFIG}
+        make -j$(nproc --all) ARCH=arm64 SUBARCH=arm64 O=out \
+		ARCH=arm64 \
+		CC=clang \
+		CROSS_COMPILE=aarch64-linux-gnu- \
+		CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+		NM=llvm-nm \
+		OBJCOPY=llvm-objcopy \
+		OBJDUMP=llvm-objdump \
+		STRIP=llvm-strip
+	elif [[ $COMPILER == "gcc" ]]; then
+        make -j$(nproc --all) O=out ARCH=arm64 SUBARCH=arm64 ${DEFCONFIG}
+        make -j$(nproc --all) ARCH=arm64 SUBARCH=arm64 O=out \
+        CROSS_COMPILE=${GCC_ROOTDIR}/bin/aarch64-elf- \
+        CROSS_COMPILE_ARM32=${GCC_ROOTDIR32}/bin/arm-eabi- \
+        AR=${GCC_ROOTDIR}/bin/aarch64-elf-ar \
+        OBJDUMP=${GCC_ROOTDIR}/bin/aarch64-elf-objdump \
+	fi
+	BUILD_END=$(date +"%s")
+	DIFF=$((BUILD_END - BUILD_START))
+	if [ -f "$IMG_DIR"/Image.gz-dtb ] 
+	then
+		echo -e "Kernel successfully compiled"
+	elif ! [ -f "$IMG_DIR"/Image.gz-dtb ]
+	then
+		echo -e "Kernel compilation failed"
+		tg_post_msg "<b>Build failed to compile after $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds</b>"
+		exit 1
+	fi
 }
-# Fin Error
-function finerr() {
-    curl -s -X POST "https://api.telegram.org/bot$TG_TOKEN/sendMessage" \
-        -d chat_id="$TG_CHAT_ID" \
-        -d "disable_web_page_preview=true" \
-        -d "parse_mode=markdown" \
-        -d text="Build throw an error(s)"
-    exit 1
+
+# Set function for zipping into a flashable zip
+gen_zip() {
+	# Move kernel and DTBO image to AnyKernel3
+	cp $IMG_DIR AnyKernel3
+	cp $DTBO_DIR AnyKernel3
+	
+	# Archive to flashable zip
+	zip -r9 "$ZIP_NAME" * -x .git README.md
+
+	# Prepare a final zip variable
+	ZIP_FINAL="$ZIP_NAME"
+
+	tg_post_build "$ZIP_FINAL" "$TG_CHAT_ID" "Build took : $((DIFF / 60)) minute(s) and $((DIFF % 60)) second(s)"
+	cd ..
 }
-# Compile plox
-function compile() {
-    make O=out ARCH=arm64 ${DEFCONFIG}
-    make -j$(nproc --all) O=out \
-                    CROSS_COMPILE=${GCC_ROOTDIR}/bin/aarch64-linux-android- \
-                    CROSS_COMPILE_ARM32=${GCC_ROOTDIR32}/bin/arm-linux-androideabi- \
-                    AR=${GCC_ROOTDIR}/bin/aarch64-elf-ar \
-                    OBJDUMP=${GCC_ROOTDIR}/bin/aarch64-elf-objdump \
-                    STRIP=${GCC_ROOTDIR}/bin/aarch64-elf-strip
-    if ! [ -a "$IMAGE" ]; then
-        finerr
-        exit 1
-    fi
-    cp out/arch/arm64/boot/Image.gz-dtb AnyKernel
-    cp out/arch/arm64/boot/dtbo.img AnyKernel
-}
-# Zipping
-function zipping() {
-    cd AnyKernel || exit 1
-    zip -r9 MIUI-kernel-ginkgo-${TANGGAL}.zip *
-    cd ..
-}
-env
-sticker
-sendinfo
+
+clone
 compile
-zipping
-END=$(date +"%s")
-DIFF=$(($END - $START))
-push
+set_naming
+gen_zip
