@@ -63,7 +63,6 @@ START1=$(date +"%s")
 export token="5330590089:AAE3gFWPQBVJuQfFln8sQkDXJrW_fHBvxc0"
 export chat_id="-1001559491005"
 export ARCH=arm64
-export LD_LIBRARY_PATH="$(${KERNEL_DIR}/lib:$LD_LIBRARY_PATH"
 export KBUILD_BUILD_USER=tzuyu-xd
 export KBUILD_BUILD_HOST=circleci
 # Send info plox
