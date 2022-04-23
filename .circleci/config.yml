@@ -1,4 +1,4 @@
-version: 2.2
+version: 2.1
 
 jobs:
   clang:
@@ -21,7 +21,7 @@ jobs:
            bash .circleci/build.sh --gcc
 
 workflows:
-  version: 2.2
+  version: 2.1
   cooking:
     jobs:
       - clang
