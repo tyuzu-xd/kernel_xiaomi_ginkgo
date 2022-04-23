@@ -1,7 +1,6 @@
 version: 2.1
-
 jobs:
-  clang:
+  compile:
    docker:
       - image: tyuzu/kernel:build
    steps:
@@ -10,19 +9,8 @@ jobs:
            git clone --depth=1 https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} -b ${CIRCLE_BRANCH} .
            bash .circleci/build.sh --proton
 
-jobs:             
-   gcc:
-    docker:
-      - image: tyuzu/kernel:build
-    steps:
-      - run:
-          command: |
-           git clone --depth=1 https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} -b ${CIRCLE_BRANCH} .
-           bash .circleci/build.sh --gcc
-
 workflows:
   version: 2.1
   cooking:
     jobs:
-      - clang
-      - gcc
+      - compile
