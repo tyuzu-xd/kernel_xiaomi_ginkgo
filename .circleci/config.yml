@@ -5,9 +5,9 @@ jobs:
    docker:
       - image: tyuzu/kernel:build
    steps:
-      - run:
-      - run: git clone --depth=1 https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} -b ${CIRCLE_BRANCH} .
-      - run: bash .circleci/build.sh --azure #--azure, --aosp
+      - run: 
+           git clone --depth=1 https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} -b ${CIRCLE_BRANCH} .
+           bash .circleci/build.sh --azure #--azure, --aosp
              
 workflows:
   version: 2.1
