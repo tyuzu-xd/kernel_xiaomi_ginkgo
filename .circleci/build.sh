@@ -10,6 +10,8 @@ TANGGAL=$(date +"%F-%S")
 START=$(date +"%s")
 KERNEL_DIR=$(pwd)
 PATH="${KERNEL_DIR}/clang/bin:${KERNEL_DIR}/gcc/bin:${KERNEL_DIR}/gcc32/bin:${PATH}"
+export chat_id=$TG_CHAT_ID
+export token=$TG_TOKEN
 export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')"
 export ARCH=arm64
 export KBUILD_BUILD_HOST=circleci
@@ -76,3 +78,8 @@ zipping
 END=$(date +"%s")
 DIFF=$(($END - $START))
 push
+© 2022 GitHub, Inc.
+Terms
+Privacy
+Security
+Statu
