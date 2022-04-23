@@ -5,8 +5,6 @@
 # Copyright (c) 2021 tzuyu 
 # 
 #
-bold=$(tput bold)
-normal=$(tput sgr0)
 
 # Specify compiler.
 # 'evagcc' or 'gcc'
@@ -17,11 +15,11 @@ COMPILER=azure
 elif [[ "$1" = "--proton" ]]; then
 COMPILER=proton
 elif [[ "$1" = "--sdc" ]]; then
-COMPILER=sdc
-elif [[ "$1" = "--gcc" ]]; then
+COMPILER=azure
+elif [[ "$1" = "--sdc" ]]; then
 COMPILER=gcc
 fi
-echo "${bold}Cloning dependencies"
+echo "Cloning dependencies"
 if [[ $COMPILER = "aosp" ]]
 then
   echo "|| Cloning AOSP-13 ||"
@@ -42,7 +40,7 @@ then
   git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
   PATH="${KERNEL_DIR}/clang/bin:$PATH"
   export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')"
-elif [[ $COMPILER = "sdc" ]]
+elif [[ $COMPILER = "proton" ]]
 then
   echo  "|| Cloning Snapdragon-14 ||"
   git clone --depth=1 --depth=1 https://github.com/ThankYouMario/proprietary_vendor_qcom_sdclang -b 14 clang
@@ -98,6 +96,18 @@ function compile() {
     make -s -j$(nproc --all) O=out ARCH=arm64 vendor/ginkgo-perf_defconfig
     	if [[ $COMPILER = "azure" ]]
     	then
+        make -j$(nproc --all) O=out \
+    				ARCH=arm64 \
+    				CC=clang \
+    				AR=llvm-ar \
+    				NM=llvm-nm \
+    				OBJCOPY=llvm-objcopy \
+    				OBJDUMP=llvm-objdump \
+    				STRIP=llvm-strip \
+    				CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+    				CROSS_COMPILE=aarch64-linux-gnu-
+        elif [[ $COMPILER = "proton" ]]
+        then
         make -j$(nproc --all) O=out \
     				ARCH=arm64 \
     				CC=clang \
