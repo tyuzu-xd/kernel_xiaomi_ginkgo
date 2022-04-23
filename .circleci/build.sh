@@ -17,8 +17,8 @@ COMPILER=azure
 elif [[ "$1" = "--proton" ]]; then
 COMPILER=proton
 elif [[ "$1" = "--sdc" ]]; then
-COMPILER=azure
-elif [[ "$1" = "--sdc" ]]; then
+COMPILER=sdc
+elif [[ "$1" = "--gcc" ]]; then
 COMPILER=gcc
 fi
 echo "${bold}Cloning dependencies"
@@ -42,7 +42,7 @@ then
   git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
   PATH="${KERNEL_DIR}/clang/bin:$PATH"
   export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')"
-elif [[ $COMPILER = "proton" ]]
+elif [[ $COMPILER = "sdc" ]]
 then
   echo  "|| Cloning Snapdragon-14 ||"
   git clone --depth=1 --depth=1 https://github.com/ThankYouMario/proprietary_vendor_qcom_sdclang -b 14 clang
