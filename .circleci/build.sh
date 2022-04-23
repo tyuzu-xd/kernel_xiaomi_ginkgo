@@ -39,7 +39,7 @@ then
   echo  "|| Cloning Proton-13 ||"
   git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
   PATH="${KERNEL_DIR}/clang/bin:$PATH"
-  export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')"
+  export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\((?:http|git).*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//' -e 's/^.*clang/clang/')"
 elif [[ $COMPILER = "proton" ]]
 then
   echo  "|| Cloning Snapdragon-14 ||"
@@ -63,6 +63,7 @@ START1=$(date +"%s")
 export token="5330590089:AAE3gFWPQBVJuQfFln8sQkDXJrW_fHBvxc0"
 export chat_id="-1001559491005"
 export ARCH=arm64
+export LD_LIBRARY_PATH="$(${KERNEL_DIR}/lib:$LD_LIBRARY_PATH"
 export KBUILD_BUILD_USER=tzuyu-xd
 export KBUILD_BUILD_HOST=circleci
 # Send info plox
@@ -98,12 +99,14 @@ function compile() {
     	then
         make -j$(nproc --all) O=out \
     				ARCH=arm64 \
-    				CC=clang \
-    				AR=llvm-ar \
-    				NM=llvm-nm \
-    				OBJCOPY=llvm-objcopy \
-    				OBJDUMP=llvm-objdump \
-    				STRIP=llvm-strip \
+    				CC="clang" \
+    				AR="llvm-ar" \
+    				NM="llvm-nm" \
+    				LD="ld.lld" \
+    				OBJCOPY="llvm-objcopy" \
+    				OBJDUMP="llvm-objdump" \
+    				STRIP="llvm-strip" \
+    				CLANG_TRIPLE=aarch64-linux-gnu- \
     				CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
     				CROSS_COMPILE=aarch64-linux-gnu-
         elif [[ $COMPILER = "proton" ]]
