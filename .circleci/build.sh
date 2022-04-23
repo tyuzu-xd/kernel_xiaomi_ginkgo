@@ -7,7 +7,7 @@
 #
 
 # Set environment for directory
-KERNEL_DIR=$pwd
+KERNEL_DIR=${pwd}
 IMG_DIR=$TC_DIR/out/arch/arm64/boot/Image.gz-dtb
 DTBO_DIR=$TC_DIR//out/arch/arm64/boot/dtbo.img
 
@@ -108,7 +108,6 @@ set_naming() {
 compile() {
 	echo -e "Kernel compilation starting"
 	tg_post_msg "<b>Docker OS: </b><code>$DISTRO</code>%0A<b>Kernel Version : </b><code>$KERVER</code>%0A<b>Date : </b><code>$(TZ=Asia/Jakarta date)</code>%0A<b>Device : </b><code>Redmi Note 8/8T (ginkgo/willow)</code>%0A<b>Pipeline Host : </b><code>$KBUILD_BUILD_HOST</code>%0A<b>Host Core Count : </b><code>$PROCS</code>%0A<b>Compiler Used : </b><code>$KBUILD_COMPILER_STRING</code>%0a<b>Branch : </b><code>$BRANCH</code>%0A<b>Last Commit : </b><code>$COMMIT_HEAD</code>%0A<b>Status : </b>#Personal"
-	make O=out "$DEFCONFIG"
 	BUILD_START=$(date +"%s")
 	if [[ $COMPILER == "clang" ]]; then
         make -j$(nproc --all) O=out ARCH=arm64 SUBARCH=arm64 ${DEFCONFIG}
@@ -127,11 +126,9 @@ compile() {
         CROSS_COMPILE=${GCC_ROOTDIR}/bin/aarch64-elf- \
         CROSS_COMPILE_ARM32=${GCC_ROOTDIR32}/bin/arm-eabi- \
         AR=${GCC_ROOTDIR}/bin/aarch64-elf-ar \
-        OBJDUMP=${GCC_ROOTDIR}/bin/aarch64-elf-objdump \
+        OBJDUMP=${GCC_ROOTDIR}/bin/aarch64-elf-objdump
 	fi
-    }
-    
-    BUILD_END=$(date +"%s")
+	BUILD_END=$(date +"%s")
 	DIFF=$((BUILD_END - BUILD_START))
 	if [ -f "$IMG_DIR"/Image.gz-dtb ] 
 	then
@@ -142,6 +139,7 @@ compile() {
 		tg_post_msg "<b>Build failed to compile after $((DIFF / 60)) minute(s) and $((DIFF % 60)) seconds</b>"
 		exit 1
 	fi
+    }
 
 # Set function for zipping into a flashable zip
 gen_zip() {
