@@ -8,8 +8,8 @@
 
 # Set environment for directory
 KERNEL_DIR=$PWD
-IMG_DIR="$KERNEL_DIR"/out/arch/arm64/boot/Image.gz-dtb
-DTBO_DIR=$CIRRUS_WORKING_DIR/$DEVICE_CODENAME/out/arch/arm64/boot/dtbo.img
+IMG_DIR=$KERNEL_DIR/out/arch/arm64/boot/Image.gz-dtb
+DTBO_DIR=$KERNEL_DIR//out/arch/arm64/boot/dtbo.img
 
 # Get defconfig file
 DEFCONFIG=vendor/ginkgo-perf_defconfig
