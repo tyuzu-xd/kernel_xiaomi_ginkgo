@@ -31,7 +31,7 @@ then
 elif [[ $COMPILER = "azure" ]]
 then
   echo  "|| Cloning AZURE-14 ||"
-  git clone --depth=1 https://github.com/fiqri19102002/STRIX-Clang.git clang
+  git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
   PATH="${KERNEL_DIR}/clang/bin:$PATH"
   export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')"
 elif [[ $COMPILER = "proton" ]]
@@ -98,13 +98,13 @@ function compile() {
     	then
         make -j$(nproc --all) O=out \
     				ARCH=arm64 \
-    				CC="clang" \
-    				AR="llvm-ar" \
-    				NM="llvm-nm" \
-    				LD="ld.lld" \
-    				OBJCOPY="llvm-objcopy" \
-    				OBJDUMP="llvm-objdump" \
-    				STRIP="llvm-strip" \
+    				CC=clang \
+    				AR=llvm-ar \
+    				NM=llvm-nm \
+    				LD=ld.lld \
+    				OBJCOPY=llvm-objcopy \
+    				OBJDUMP=llvm-objdump \
+    				STRIP=llvm-strip \
     				CLANG_TRIPLE=aarch64-linux-gnu- \
     				CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
     				CROSS_COMPILE=aarch64-linux-gnu-
