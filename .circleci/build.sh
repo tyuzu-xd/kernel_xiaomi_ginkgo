@@ -27,7 +27,7 @@ then
 elif [[ $COMPILER = "azure" ]]
 then
   echo  "|| Cloning AZURE-14 ||"
-  git clone --depth=1 https://gitlab.com/Panchajanya1999/azure-clang.git clang
+  git clone --depth=1 https://github.com/fiqri19102002/STRIX-Clang.git clang
   PATH="${KERNEL_DIR}/clang/bin:$PATH"
   export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')"
 elif [[ $COMPILER = "gcc" ]]
@@ -55,7 +55,7 @@ function sendinfo() {
                         -d chat_id="$chat_id" \
                         -d "disable_web_page_preview=true" \
                         -d "parse_mode=html" \
-                        -d text="<b>• bEast Kernel •</b> ${TYPE} build started%0AStarted on <code>Circle CI</code>%0AFor device Redmi Note 7/7S%0AOn branch <code>${CIRCLE_BRANCH}</code>%0AUnder commit <code>$(git log --pretty=format:'"%h : %s"' -1)</code>%0AStarted on <code>$(TZ=Asia/Kolkata date)</code>%0A<b>CI Workflow information:</b> <a href='https://circleci.com/workflow-run/${CIRCLE_WORKFLOW_ID}'>here</a>"
+                        -d text="<b>• Ginkgo Kernel •</b> ${TYPE} build started%0AStarted on <code>Circle CI</code>%0AFor device Redmi Note 8/8T%0AOn branch <code>${CIRCLE_BRANCH}</code>%0AUnder commit <code>$(git log --pretty=format:'"%h : %s"' -1)</code>%0AStarted on <code>$(TZ=Asia/Kolkata date)</code>%0A<b>CI Workflow information:</b> <a href='https://circleci.com/workflow-run/${CIRCLE_WORKFLOW_ID}'>here</a>"
 }
 # Push kernel to channel
 function push() {
@@ -126,7 +126,7 @@ function compile() {
 # Zipping
 function zipping() {
     cd AnyKernel || exit 1
-    zip -r9 bEast-HMP-${TYPE}-${SHA}.zip *
+    zip -r9 Ginkgo-R-${TYPE}-${SHA}.zip *
     cd ..
 }
 sendinfo
