@@ -5,6 +5,8 @@
 # Copyright (c) 2021 tzuyu 
 # 
 #
+bold=$(tput bold)
+normal=$(tput sgr0)
 
 # Specify compiler.
 # 'evagcc' or 'gcc'
@@ -12,10 +14,14 @@ if [[ "$1" = "--aosp" ]]; then
 COMPILER=aosp
 elif [[ "$1" = "--azure" ]]; then
 COMPILER=azure
-elif [[ "$1" = "--gcc" ]]; then
+elif [[ "$1" = "--proton" ]]; then
+COMPILER=proton
+elif [[ "$1" = "--sdc" ]]; then
+COMPILER=azure
+elif [[ "$1" = "--sdc" ]]; then
 COMPILER=gcc
 fi
-echo "Cloning dependencies"
+echo "${bold}Cloning dependencies"
 if [[ $COMPILER = "aosp" ]]
 then
   echo "|| Cloning AOSP-13 ||"
@@ -28,6 +34,18 @@ elif [[ $COMPILER = "azure" ]]
 then
   echo  "|| Cloning AZURE-14 ||"
   git clone --depth=1 https://github.com/fiqri19102002/STRIX-Clang.git clang
+  PATH="${KERNEL_DIR}/clang/bin:$PATH"
+  export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')"
+elif [[ $COMPILER = "proton" ]]
+then
+  echo  "|| Cloning Proton-13 ||"
+  git clone --depth=1 https://github.com/kdrag0n/proton-clang.git clang
+  PATH="${KERNEL_DIR}/clang/bin:$PATH"
+  export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')"
+elif [[ $COMPILER = "proton" ]]
+then
+  echo  "|| Cloning Snapdragon-14 ||"
+  git clone --depth=1 --depth=1 https://github.com/ThankYouMario/proprietary_vendor_qcom_sdclang -b 14 clang
   PATH="${KERNEL_DIR}/clang/bin:$PATH"
   export KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')"
 elif [[ $COMPILER = "gcc" ]]
