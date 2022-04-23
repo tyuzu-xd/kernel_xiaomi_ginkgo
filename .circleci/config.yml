@@ -5,13 +5,12 @@ jobs:
       - image: tyuzu/kernel:build
    steps:
       - run:
-          TG_TOKEN:
-             from_secret: TG_TOKEN
-          TG_CHAT_ID:
-             from_secret: TG_CHAT_ID
           command: |
+           git config --global user.name "tzuyu-xd"
+           git config --global user.email "sahruldarmian212@gmail.com"
            git clone --depth=1 https://github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME} -b ${CIRCLE_BRANCH} .
-           bash .circleci/build.sh --proton
+           bash .circleci/build.sh
+             
 workflows:
   version: 2.1
   cooking:
