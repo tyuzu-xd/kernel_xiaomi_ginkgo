@@ -115,7 +115,6 @@ compile() {
 				CC=clang \
 				AR=llvm-ar \
 				NM=llvm-nm \
-				LD=ld.lld \
 				OBJDUMP=llvm-objdump \
 				STRIP=llvm-strip
 	elif [[ $COMPILER == "gcc" ]]; then
