@@ -1,5 +1,5 @@
 #! /bin/bash
-
+ 
 #
 # Script for building Android arm64 Kernel
 #
